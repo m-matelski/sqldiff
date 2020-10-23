@@ -24,7 +24,7 @@ def _compare_keys_zip(source_keys, target_keys):
     src_idx = 0
     tgt_idx = 0
     key_comp_list = []
-
+    # TODO case insensitive comparison
     # set of common keys
     common_keys = source_keys.keys() & target_keys.keys()
 

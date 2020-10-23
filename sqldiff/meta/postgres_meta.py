@@ -73,9 +73,9 @@ def get_meta(connection, query, predefined_type_mapping=None):
             else:
                 precision = column.precision
                 scale = column.scale
-
+            # TODO move lowering to compare keys function
             column_description = {
-                'name': column.name,
+                'name': column.name.lower(),
                 'type_code': column.type_code,
                 'display_size': column.display_size,
                 'internal_size': column.internal_size,
