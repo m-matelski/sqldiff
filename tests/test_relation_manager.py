@@ -1,6 +1,6 @@
 import unittest
 
-from sqldiff.meta.compare_description import ColumnDescription
+from sqldiff.meta.column_description import ColumnDescription
 from sqldiff.relation.relation_manager import dbmapping, mappings, get_relations_using_keys, get_relations_using_columns
 
 

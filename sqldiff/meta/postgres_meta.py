@@ -1,7 +1,7 @@
 from typing import List
 
 from sqldiff.meta.dbsystem import POSTGRES
-from sqldiff.meta.compare_description import ColumnDescription
+from sqldiff.meta.column_description import ColumnDescription
 
 LIMIT_0 = ' limit 0'
 NUMERIC_MAX_PRECISION = 65535

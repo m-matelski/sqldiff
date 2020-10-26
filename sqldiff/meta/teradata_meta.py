@@ -2,7 +2,7 @@ import json
 from typing import List
 
 from sqldiff.meta.dbsystem import TERADATA
-from sqldiff.meta.compare_description import ColumnDescription
+from sqldiff.meta.column_description import ColumnDescription
 
 
 def get_raw_meta(connection, query):
