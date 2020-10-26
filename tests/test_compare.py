@@ -2,10 +2,9 @@ import unittest
 from copy import deepcopy
 from operator import itemgetter
 
-from sqldiff.comp.compare import compare_keys, _compare_columns_attributes, \
-    _calculate_attributes_comparison_result_score, \
-    compare_columns, compare_column_lists
-from sqldiff.meta.compare_description import ColumnDescription
+from sqldiff.comp.compare import compare_keys, ColumnsComparisonResult, AttributesComparisonResult, \
+    ColumnComparisonResult
+from sqldiff.meta.column_description import ColumnDescription
 from sqldiff.relation.relation_manager import dbmapping, mappings
 
 
@@ -50,7 +49,7 @@ class TestCompareKeys(unittest.TestCase):
         tgt_fields = ['f1', 'f3', 'f2', 'f4', 'f5', 'f6']
 
         result = compare_keys(src_fields, tgt_fields)
-        result_fields = [(i['source'], i['target']) for i in result]
+        result_fields = [(i.source, i.target) for i in result]
         expected_fields = [
             ('f1', 'f1'),
             ('f2', 'f3'),
@@ -62,13 +61,31 @@ class TestCompareKeys(unittest.TestCase):
 
         self.assertEqual(result_fields, expected_fields)
 
+    def test_compare_keys_unequal_field_lists_different_character_case(self):
+        """Test if _compare_keys_zip functions handles unequal fields number"""
+        src_fields = ['f1', 'f2', 'f3', 'F5', 'F6']
+        tgt_fields = ['f1', 'F3', 'f2', 'f4', 'F5', 'f6']
+
+        result = compare_keys(src_fields, tgt_fields)
+        result_fields = [(i.source, i.target) for i in result]
+        expected_fields = [
+            ('f1', 'f1'),
+            ('f2', 'F3'),
+            ('f3', 'f2'),
+            (None, 'f4'),
+            ('F5', 'F5'),
+            ('F6', 'f6')
+        ]
+
+        self.assertEqual(result_fields, expected_fields)
+
     def test_compare_keys_order_order_flag(self):
         """Test if compare keys result order flag is set correctly"""
         src_fields = ['f1', 'f2', 'f3', 'f5', 'f6']
         tgt_fields = ['f1', 'f3', 'f2', 'f4', 'f5', 'f6']
 
         result = compare_keys(src_fields, tgt_fields)
-        result_fields = [(i['source'], i['target'], i['order_match']) for i in result]
+        result_fields = [(i.source, i.target, i.order_match) for i in result]
         expected_fields = [
             ('f1', 'f1', True),
             ('f2', 'f3', False),
@@ -112,8 +129,8 @@ class TestCompareKeys(unittest.TestCase):
 
         result_fields = [
             (
-                getter(i['source']) if i['source'] is not None else None,
-                getter(i['target']) if i['target'] is not None else None
+                getter(i.source) if i.source is not None else None,
+                getter(i.target) if i.target is not None else None
             ) for i in result
         ]
         expected_fields = [
@@ -135,34 +152,33 @@ class TestCompareColumnsAttributes(unittest.TestCase):
         src_col = create_column('dbsystem1', 'field_name', 'DECIMAL', 19, 9)
         tgt_col = create_column('dbsystem2', 'field_name', 'DECIMAL', 19, 5)
 
-        result = _compare_columns_attributes(src_col, tgt_col)
+        result = AttributesComparisonResult(src_col, tgt_col)
 
-        expected = {
-            'precision_match': True,
-            'precision_higher_on_target': False,
-            'precision_higher_on_source': False,
-            'scale_match': False,
-            'scale_higher_on_target': False,
-            'scale_higher_on_source': True,
-            'type_name_match': True
-        }
-
-        self.assertEqual(result, expected)
+        self.assertTrue(result.precision_match)
+        self.assertFalse(result.precision_higher_on_target)
+        self.assertFalse(result.precision_higher_on_source)
+        self.assertFalse(result.scale_match)
+        self.assertFalse(result.scale_higher_on_target)
+        self.assertTrue(result.scale_higher_on_source)
+        self.assertTrue(result.type_name_match)
 
     def test_comparison_result_score_calculation(self):
         """Test comparisonm result score calculation"""
 
-        test_comparison_result = {
-            'precision_match': True,
-            'precision_higher_on_target': False,
-            'precision_higher_on_source': False,
-            'scale_match': False,
-            'scale_higher_on_target': False,
-            'scale_higher_on_source': True,
-            'type_name_match': True
-        }
+        src_col = create_column('dbsystem1', 'field_name', 'DECIMAL', 19, 9)
+        tgt_col = create_column('dbsystem2', 'field_name', 'DECIMAL', 19, 5)
 
-        scorecard = {
+        attr = AttributesComparisonResult(src_col, tgt_col)
+
+        attr.precision_match = True
+        attr.precision_higher_on_target = False
+        attr.precision_higher_on_source = False
+        attr.scale_match = False
+        attr.scale_higher_on_target = False
+        attr.scale_higher_on_source = True
+        attr.type_name_match = True
+
+        attr.scorecard = {
             'precision_match': lambda x: (not x) * 5,
             'precision_higher_on_target': lambda x: x * 1,
             'precision_higher_on_source': lambda x: x * 2,
@@ -172,7 +188,7 @@ class TestCompareColumnsAttributes(unittest.TestCase):
             'type_name_match': lambda x: (not x) * 50
         }
 
-        score_result = _calculate_attributes_comparison_result_score(test_comparison_result, scorecard)
+        score_result = attr.calculate_score()
         self.assertEqual(score_result, 7)
 
 
@@ -188,22 +204,24 @@ class TestCompareColumnsWithoutMappings(unittest.TestCase):
         src_col = create_column('dbsystem1', 'field_name', 'DECIMAL', 19, 5)
         tgt_col = create_column('dbsystem1', 'field_name', 'DECIMAL', 19, 5)
 
-        result = compare_columns(src_col, tgt_col)
-        self.assertTrue(result['attributes_comparison_results'][0]['attr_comp_result']['precision_match'])
-        self.assertTrue(result['attributes_comparison_results'][0]['attr_comp_result']['scale_match'])
-        self.assertTrue(result['attributes_comparison_results'][0]['attr_comp_result']['type_name_match'])
+        result = ColumnComparisonResult(src_col, tgt_col)
+        # result.kc_result.
+
+        self.assertTrue(result.best_result().precision_match)
+        self.assertTrue(result.best_result().scale_match)
+        self.assertTrue(result.best_result().type_name_match)
 
     def test_compare_different_unmapped_types(self):
         """Test if comparing the same columns returns perfect match"""
         src_col = create_column('dbsystem1', 'field_name', 'DECIMAL', 19, 5)
         tgt_col = create_column('dbsystem1', 'field_name', 'VARCHAR', 50)
 
-        result = compare_columns(src_col, tgt_col)
+        result = ColumnComparisonResult(src_col, tgt_col)
 
-        self.assertFalse(result['attributes_comparison_results'][0]['attr_comp_result']['precision_match'])
+        self.assertFalse(result.best_result().precision_match)
         # scale is not comparable
-        self.assertTrue(result['attributes_comparison_results'][0]['attr_comp_result']['scale_match'])
-        self.assertFalse(result['attributes_comparison_results'][0]['attr_comp_result']['type_name_match'])
+        self.assertTrue(result.best_result().scale_match)
+        self.assertFalse(result.best_result().type_name_match)
 
 
 class CompareColumnsWithCustomMappings(unittest.TestCase):
@@ -230,21 +248,19 @@ class CompareColumnsWithCustomMappings(unittest.TestCase):
         src_col = create_column('teradata', 'field_name', 'LONG VARCHAR')
 
         tgt_col = create_column('postgres', 'field_name', 'VARCHAR', 64000)
-        result = compare_columns(src_col, tgt_col)
-        self.assertEqual(result['attributes_comparison_results'][0]['comparison_score'], 0)
+        result = ColumnComparisonResult(src_col, tgt_col)
+        self.assertEqual(result.best_result().score, 0)
 
         tgt_col = create_column('postgres', 'field_name', 'TEXT')
-        result = compare_columns(src_col, tgt_col)
-        self.assertEqual(result['attributes_comparison_results'][0]['comparison_score'], 0)
+        result = ColumnComparisonResult(src_col, tgt_col)
+        self.assertEqual(result.best_result().score, 0)
 
     def test_compare_columns_not_matching_mapping(self):
         m = mappings
-
         src_col = create_column('teradata', 'field_name', 'LONG VARCHAR')
-
         tgt_col = create_column('postgres', 'field_name', 'DECIMAL', 19, 5)
-        result = compare_columns(src_col, tgt_col)
-        self.assertNotEqual(result['attributes_comparison_results'][0]['comparison_score'], 0)
+        result = ColumnComparisonResult(src_col, tgt_col)
+        self.assertNotEqual(result.best_result().score, 0)
 
 
 class TestCompareColumnLists(unittest.TestCase):
@@ -262,7 +278,7 @@ class TestCompareColumnLists(unittest.TestCase):
             create_column('teradata', 'f3', 'DATE')
         ]
         # Matching type but not the same
-        result = compare_column_lists(src_cols, tgt_cols)
+        result = ColumnsComparisonResult(src_cols, tgt_cols)
 
         self.assertTrue(result.match())
         self.assertTrue(result.match(order=False))
@@ -280,7 +296,7 @@ class TestCompareColumnLists(unittest.TestCase):
             create_column('teradata', 'f2', 'VARCHAR', 500)
         ]
         # Matching type but not the same
-        result = compare_column_lists(src_cols, tgt_cols)
+        result = ColumnsComparisonResult(src_cols, tgt_cols)
 
         self.assertFalse(result.match())
         self.assertTrue(result.match(order=False))
@@ -306,7 +322,7 @@ class TestCompareColumnLists(unittest.TestCase):
             create_column('teradata', 'f4', 'INT'),
 
         ]
-        result = compare_column_lists(src_cols, tgt_cols)
+        result = ColumnsComparisonResult(src_cols, tgt_cols)
 
         # Todo some more specific tests on comparison attributes
         self.assertFalse(result.match())
