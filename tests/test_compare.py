@@ -325,4 +325,5 @@ class TestCompareColumnLists(unittest.TestCase):
         result = ColumnsComparisonResult(src_cols, tgt_cols)
 
         # Todo some more specific tests on comparison attributes
+        print(result)
         self.assertFalse(result.match())

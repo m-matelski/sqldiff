@@ -146,6 +146,9 @@ class AttributesComparisonResult:
         self.scale_higher_on_source = source.scale > target.scale if scale_is_comparable else False
         self.type_name_match = source.type_name==target.type_name
 
+        self.scale_factor = target.scale - source.scale if scale_is_comparable else 0
+        self.precision_factor = target.precision - source.precision if precision_is_comparable else 0
+
         # count comparison score
         self.scorecard = self.COMPARISON_RESULT_SCORECARD
         self.score = self.calculate_score()
@@ -200,6 +203,20 @@ class KeyColumnComparisonResult:
         self.col = col
         self.match = key.match and col.match
 
+        attr = self.col.best_result() if self.col is not None else None
+
+        self.precision_match = attr.precision_match if attr is not None else None
+        self.sacle_match = attr.scale_match if attr is not None else None
+        self.type_name_match = attr.type_name_match if attr is not None else None
+        self.precision_factor = attr.precision_factor if attr is not None else None
+        self.scale_factor = attr.scale_factor if attr is not None else None
+
+
+
+
+
+
+
     def __repr__(self):
         return f'{repr(self.key)} - {repr(self.col)}'
 
@@ -243,15 +260,13 @@ class ColumnsComparisonResult:
         row_format = '{:>' + str(max_src + 3) + '} | {:' + str(max_tgt + 3) + '} - {:^20}|{:^20}|{:^20}|{:^20}|'
         rows = []
         for kc in self:
-            attr = kc.col.best_result() if kc.col is not None else None
             key = kc.key
-            source = key.source if key is not None else None
-            target = key.target if key is not None else None
+            source = key.source #if key is not None else None
+            target = key.target #if key is not None else None
             match = kc.match
-            order_match = key.order_match if key is not None else None
-            type_match = attr.type_name_match if attr is not None else None
-            attr_match = getattr(attr, 'precision_match', None) and getattr(attr, 'scale_match', None)
-
+            order_match = key.order_match
+            type_match = kc.type_name_match
+            attr_match = kc.precision_match and kc.sacle_match
 
             r = map(str, [source, target, match, order_match, type_match, attr_match])
 
