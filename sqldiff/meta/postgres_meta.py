@@ -2,6 +2,7 @@ from typing import List
 
 from sqldiff.meta.dbsystem import POSTGRES
 from sqldiff.meta.column_description import ColumnDescription
+from sqldiff.meta.meta_connection_dispatcher import dbmeta
 
 LIMIT_0 = ' limit 0'
 NUMERIC_MAX_PRECISION = 65535
@@ -53,6 +54,7 @@ def get_type_code_name_mapping(connection):
         return oid_types_dict
 
 
+@dbmeta('psycopg2')
 def get_meta(connection, query, predefined_type_mapping=None):
     if predefined_type_mapping is None:
         type_mapping = get_type_code_name_mapping(connection)
@@ -73,9 +75,8 @@ def get_meta(connection, query, predefined_type_mapping=None):
             else:
                 precision = column.precision
                 scale = column.scale
-            # TODO move lowering to compare keys function
             column_description = {
-                'name': column.name.lower(),
+                'name': column.name,
                 'type_code': column.type_code,
                 'display_size': column.display_size,
                 'internal_size': column.internal_size,

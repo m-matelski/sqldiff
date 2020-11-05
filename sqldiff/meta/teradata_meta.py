@@ -3,6 +3,7 @@ from typing import List
 
 from sqldiff.meta.dbsystem import TERADATA
 from sqldiff.meta.column_description import ColumnDescription
+from sqldiff.meta.meta_connection_dispatcher import dbmeta
 
 
 def get_raw_meta(connection, query):
@@ -14,6 +15,7 @@ def get_raw_meta(connection, query):
         return json.loads(row[7])
 
 
+@dbmeta('teradatasql')
 def get_meta(connection, query):
     raw_meta = get_raw_meta(connection, query)
     metadata: List[ColumnDescription] = []
@@ -31,9 +33,9 @@ def get_meta(connection, query):
             scale = column['Scale']
         else:
             precision = scale = None
-        # TODO move lowering to compare keys function
+
         column_description = {
-            'name': column['Title'].lower(),
+            'name': column['Title'],
             'type_code': column['RawDataType'],
             'display_size': None,
             'internal_size': column['ByteCount'],

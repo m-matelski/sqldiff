@@ -3,6 +3,7 @@ from typing import List
 
 from sqldiff.comp.syntax_analysis import is_schema_dot_table_string, schema_table_name_to_query, is_select_statement
 from sqldiff.meta.column_description import ColumnDescription
+from sqldiff.meta.meta_connection_dispatcher import get_meta_provider
 from sqldiff.relation.relation_manager import get_relations
 
 
@@ -24,7 +25,6 @@ def compare_keys_zip(source_keys, target_keys):
     src_idx = 0
     tgt_idx = 0
     key_comp_list = []
-    # TODO case insensitive comparison
     # set of common keys
     common_keys = source_keys.keys() & target_keys.keys()
 
@@ -44,10 +44,10 @@ def compare_keys_zip(source_keys, target_keys):
                 'target': target_keys[tgt_key],
                 'exists_on_source': True,
                 'exists_on_target': True,
-                'match': True, # exists_on_source and exists_on_target
+                'match': True,  # exists_on_source and exists_on_target
                 'inserted_on_source': False,
                 'inserted_on_target': False,
-                'order_match': bool(src_idx + pos_factor == tgt_idx and src_key_upper == tgt_key_upper)
+                'order_match': bool(src_idx + pos_factor==tgt_idx and src_key_upper==tgt_key_upper)
             }
             key_comp_list.append(comparison_dict)
             src_idx += 1
@@ -63,8 +63,8 @@ def compare_keys_zip(source_keys, target_keys):
                     'exists_on_target': True,
                     'match': False,
                     'inserted_on_source': False,
-                    'inserted_on_target': bool(src_idx + pos_factor == tgt_idx),
-                    'order_match': bool(src_idx + pos_factor == tgt_idx)
+                    'inserted_on_target': bool(src_idx + pos_factor==tgt_idx),
+                    'order_match': bool(src_idx + pos_factor==tgt_idx)
                 }
                 key_comp_list.append(comparison_dict)
                 tgt_idx += 1
@@ -77,9 +77,9 @@ def compare_keys_zip(source_keys, target_keys):
                     'exists_on_source': True,
                     'exists_on_target': False,
                     'match': False,
-                    'inserted_on_source': bool(src_idx + pos_factor == tgt_idx),
+                    'inserted_on_source': bool(src_idx + pos_factor==tgt_idx),
                     'inserted_on_target': False,
-                    'order_match': bool(src_idx + pos_factor == tgt_idx)
+                    'order_match': bool(src_idx + pos_factor==tgt_idx)
                 }
                 key_comp_list.append(comparison_dict)
                 src_idx += 1
@@ -119,7 +119,6 @@ def compare_keys(source, target, key=None) -> List[KeysComparisonResult]:
 
 
 class AttributesComparisonResult:
-
     COMPARISON_RESULT_SCORECARD = {
         'precision_match': lambda x: (not x) * 5,
         'precision_higher_on_target': lambda x: x * 1,
@@ -153,7 +152,7 @@ class AttributesComparisonResult:
         self.scorecard = self.COMPARISON_RESULT_SCORECARD
         self.score = self.calculate_score()
 
-        self.match = self.score == 0
+        self.match = self.score==0
 
     def calculate_score(self):
         score = sum([self.scorecard[k](v) for k, v in vars(self).items() if k in self.scorecard])
@@ -164,8 +163,6 @@ class AttributesComparisonResult:
 
     def __repr__(self):
         return f'({self.match=}, {self.type_name_match=}, {self.scale_match=}, {self.precision_match=})'
-
-
 
 
 class ColumnComparisonResult:
@@ -211,12 +208,6 @@ class KeyColumnComparisonResult:
         self.precision_factor = attr.precision_factor if attr is not None else None
         self.scale_factor = attr.scale_factor if attr is not None else None
 
-
-
-
-
-
-
     def __repr__(self):
         return f'{repr(self.key)} - {repr(self.col)}'
 
@@ -261,8 +252,8 @@ class ColumnsComparisonResult:
         rows = []
         for kc in self:
             key = kc.key
-            source = key.source #if key is not None else None
-            target = key.target #if key is not None else None
+            source = key.source  # if key is not None else None
+            target = key.target  # if key is not None else None
             match = kc.match
             order_match = key.order_match
             type_match = kc.type_name_match
@@ -300,7 +291,7 @@ class ColumnsComparisonResult:
         """
         Checks if target columns match source columns in terms of names, orders and columns attributes.
         :param order: Default True. Set to False if want to ommit order checking.
-        :return:
+        :return: True/False
         """
         # Catching KeyError when 'attributes_comparison_results' doesn't exist (no matching field on source/target)
         try:
@@ -317,17 +308,13 @@ class ColumnsComparisonResult:
         :param col_source: 'source' or 'target'
         :return: length of longest column string representation
         """
-        if col_source == 'target':
+        if col_source=='target':
             col_list = self.target_columns
-        elif col_source == 'source':
+        elif col_source=='source':
             col_list = self.source_columns
         else:
             raise KeyError("col_source must have value of 'source' or 'target'.")
         return max([len(str(c)) for c in col_list])
-
-
-
-
 
 
 # TODO change compare source / target functions to "order" funcns
@@ -342,10 +329,6 @@ class ColumnsComparisonResult:
 #     a = 1
 
 
-
-
-
-
 def validate_compare_query(query):
     if is_schema_dot_table_string(query):
         return schema_table_name_to_query(query)
@@ -355,7 +338,6 @@ def validate_compare_query(query):
         raise ValueError('Invalid statement. Must be schema.table or SELECT statement.')
 
 
-
 def compare(source_connection, source_query, target_connection, target_query,
             source_get_meta=None, target_get_meta=None):
     # TODO - metadata provider dispatching based on connection object
@@ -363,11 +345,11 @@ def compare(source_connection, source_query, target_connection, target_query,
     src_sql = validate_compare_query(source_query)
     tgt_sql = validate_compare_query(target_query)
 
-    src_cols = source_get_meta(source_connection, src_sql)
-    tgt_cols = target_get_meta(target_connection, tgt_sql)
+    source_meta_func = source_get_meta if source_get_meta is not None else get_meta_provider(source_connection)
+    target_meta_func = target_get_meta if target_get_meta is not None else get_meta_provider(target_connection)
+
+    src_cols = source_meta_func(source_connection, src_sql)
+    tgt_cols = target_meta_func(target_connection, tgt_sql)
 
     result = ColumnsComparisonResult(src_cols, tgt_cols)
     return result
-
-
-
