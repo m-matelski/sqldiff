@@ -6,7 +6,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     version='0.0.1',
     license='MIT',
-    description='Compare sql objects on different dataes',
+    description='Compare sql objects structure (tables, views or queries) on different databases',
     author='Mateusz Matelski',
     author_email='m.z.matelski@gmail.com',
     url='https://github.com/m-matelski/sqldiff',
@@ -15,9 +15,6 @@ setuptools.setup(
     install_requires=[
         'sqlparse==0.4.1'
     ],
-    # entry_points={
-    #     'console_scripts': ['sql-diff=sqldiff.console_program:main']
-    # },
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
