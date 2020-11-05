@@ -13,7 +13,7 @@ setuptools.setup(
     download_url = 'https://github.com/m-matelski/sqldiff/archive/v0.0.1.tar.gz',
     keywords = ['sql', 'diff', 'postgres', 'teradata'],
     install_requires=[
-        'sqlparse==0.4.1'
+        'sqlparse==0.4.1', 'packaging==20.4'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
