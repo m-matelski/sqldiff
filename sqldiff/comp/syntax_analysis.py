@@ -46,7 +46,7 @@ def parse_sql(many_statements_allowed=False):
         return wrapper
     return decorator
 
-
+# Todo fix parser (dont work when parsed is empty string)
 @parse_sql()
 def is_select_statement(parsed):
     return parsed.get_type() == 'SELECT'

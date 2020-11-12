@@ -327,3 +327,31 @@ class TestCompareColumnLists(unittest.TestCase):
         # Todo some more specific tests on comparison attributes
         print(result)
         self.assertFalse(result.match())
+
+    def test_ordered_comparison_result(self):
+        """Test source ordered comparison"""
+        src_cols = [
+            create_column('teradata', 'f1', 'DECIMAL', 19, 5),
+            create_column('teradata', 'f2', 'VARCHAR', 500),
+            create_column('teradata', 'f3', 'DATE'),
+            create_column('teradata', 'f5', 'VARCHAR', 50),
+            create_column('teradata', 'f6', 'DATE'),
+            create_column('teradata', 'f7', 'VARCHAR', 100),
+
+        ]
+
+        tgt_cols = [
+            create_column('teradata', 'f1', 'DECIMAL', 19, 9),
+            create_column('teradata', 'f3', 'DATE'),
+            create_column('teradata', 'f2', 'VARCHAR', 100),
+            create_column('teradata', 'f5', 'VARCHAR', 50),
+            create_column('teradata', 'f9', 'INT'),
+            create_column('teradata', 'f6', 'TIMESTAMP'),
+            create_column('teradata', 'f4', 'INT'),
+
+        ]
+        result = ColumnsComparisonResult(src_cols, tgt_cols)
+
+        source_ordered = result.order_by_source()
+        target_ordered = result.order_by_target()
+        a = 1

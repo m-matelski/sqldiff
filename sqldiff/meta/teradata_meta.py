@@ -35,7 +35,7 @@ def get_meta(connection, query):
             precision = scale = None
 
         column_description = {
-            'name': column['Title'],
+            'name': column['Title'].lower(),
             'type_code': column['RawDataType'],
             'display_size': None,
             'internal_size': column['ByteCount'],

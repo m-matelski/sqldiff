@@ -12,7 +12,7 @@ connection_params_postgres = {
 }
 
 connection_params_teradata = {
-    'host': '192.168.1.6',
+    'host': '192.168.1.2',
     'user': 'dbc',
     'password': 'dbc',
     'database': 'test_db'

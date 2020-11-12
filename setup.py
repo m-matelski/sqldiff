@@ -4,7 +4,7 @@ import setuptools
 setuptools.setup(
     name='sqldiff',
     packages=setuptools.find_packages(),
-    version='0.0.3',
+    version='0.0.4',
     license='MIT',
     description='Compare sql objects structure (tables, views or queries) on different databases',
     author='Mateusz Matelski',

@@ -316,6 +316,28 @@ class ColumnsComparisonResult:
             raise KeyError("col_source must have value of 'source' or 'target'.")
         return max([len(str(c)) for c in col_list])
 
+    def order_by_source(self):
+        """
+        Returns new object with soruce and target fields ordered by source fields
+        :return:
+        """
+        inf = len(self.source_columns) + len(self.target_columns)
+        source_order = {c.name: i for i, c in enumerate(self.source_columns)}
+        target_order = {c.name: source_order.get(c.name, inf+i) for i, c in enumerate(self.target_columns)}
+        target_columns_ordered_by_source = sorted(self.target_columns, key=lambda x:target_order[x.name])
+        return ColumnsComparisonResult(self.source_columns, target_columns_ordered_by_source)
+
+    def order_by_target(self):
+        """
+        Returns new object with soruce and target fields ordered by target fields
+        :return:
+        """
+        inf = len(self.source_columns) + len(self.target_columns)
+        target_order = {c.name: i for i, c in enumerate(self.target_columns)}
+        source_order = {c.name: target_order.get(c.name, inf+i) for i, c in enumerate(self.source_columns)}
+        source_columns_ordered_by_target = sorted(self.source_columns, key=lambda x:source_order[x.name])
+        return ColumnsComparisonResult(source_columns_ordered_by_target, self.target_columns)
+
 
 # TODO change compare source / target functions to "order" funcns
 # zip will be the basic for sorting
